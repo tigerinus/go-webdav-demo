@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"context"
 
 	"golang.org/x/net/webdav"
 )
@@ -39,22 +39,23 @@ func firstThreeLetters(s string) string {
 }
 
 func main() {
-	addr := "0.0.0.0:8080"
-	dir := "."
+	addr := "0.0.0.0:8888"
 
-	if len(os.Args) > 1 {
-		dir = os.Args[1]
+	var fs webdav.FileSystem
+
+	if len(os.Args) < 2 {
+		log.Printf("Serving in-memory filesystem on %s", addr)
+		fs = webdav.NewMemFS()
+	} else {
+		dir := os.Args[1]
+		log.Printf("Serving %s on %s", dir, addr)
+		fs = &CustomWebDAVFileSystem{FileSystem: webdav.Dir(dir)}
 	}
-
-	fs := &CustomWebDAVFileSystem{FileSystem: webdav.Dir(dir)}
 
 	handler := &webdav.Handler{
 		FileSystem: fs,
 		LockSystem: webdav.NewMemLS(),
 	}
 
-	log.Printf("Serving %s on %s", dir, addr)
-
 	log.Fatal(http.ListenAndServe(addr, handler))
 }
-
